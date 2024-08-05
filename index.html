@@ -183,6 +183,13 @@
     <script>
         console.log('Game initialized');
         let tg = window.Telegram.WebApp;
+        // Check if the WebApp is properly initialized
+        if (!tg || typeof tg.sendData !== 'function') {
+            alert('Telegram WebApp is not properly initialized. Please try reopening the game.');
+        } else {
+            tg.expand();
+            tg.showAlert('Game initialized successfully. Telegram WebApp is ready.');
+        }
         tg.expand();
 
         const gameBoard = document.getElementById('game-board');
