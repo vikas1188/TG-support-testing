@@ -206,7 +206,7 @@
         tg.expand();
 
         // Initialize MainButton
-        tg.MainButton.setText('Send Score').hide();
+        // tg.MainButton.setText('Send Score').hide();
 
         const gameBoard = document.getElementById('game-board');
         const scoreDisplay = document.getElementById('score');
@@ -294,6 +294,7 @@
         }
 
          function gameOver() {
+            console.log('Game over function called');
             clearInterval(gameLoop);
             gameOverDisplay.style.display = 'flex';
             finalScoreDisplay.textContent = `Final Score: ${score}`;
@@ -301,22 +302,26 @@
             const gameEndTime = new Date();
             const gameTime = (gameEndTime - gameStartTime) / 1000; // Time in seconds
             
-            document.getElementById('send-score-btn').style.display = 'block';
-            
-            tg.showAlert('Game Over! Click "Send Score" to submit your score.');
-        }
-
-        document.getElementById('send-score-btn').addEventListener('click', function() {
-            const data = JSON.stringify({
+            // Store the game data to be sent later
+            gameData = {
                 action: 'game_over',
                 game_name: 'Neon Snake: Endangered Species Edition',
                 score: score,
-                time: (new Date() - gameStartTime) / 1000
-            });
+                time: gameTime
+            };
             
-            tg.sendData(data);
-            tg.showAlert('Score sent! You can close the game now.');
-            this.style.display = 'none';
+            tg.showAlert('Game Over! Click "Play Again" to restart and submit your score.');
+        }
+
+        restartButton.addEventListener('click', function() {
+            console.log('Restart button clicked');
+            if (gameData) {
+                console.log('Sending game data:', gameData);
+                tg.sendData(JSON.stringify(gameData));
+                tg.showAlert('Score sent! Starting new game.');
+                gameData = null;
+            }
+            startGame();
         });
         
         function startGame() {
