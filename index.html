@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Snake: Endangered Species Edition</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #000;
+            font-family: 'Press Start 2P', cursive;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 90vw;
+            max-width: 400px;
+            height: 90vw;
+            max-height: 400px;
+            border: 4px solid #0ff;
+            box-shadow: 0 0 20px #0ff, inset 0 0 20px #0ff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #game-board {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            grid-template-rows: repeat(20, 1fr);
+        }
+
+        .snake-segment {
+            background-color: #0f0;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        .endangered-species {
+            background-color: #f0f;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #f0f;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from {
+                transform: scale(0.8);
+            }
+
+            to {
+                transform: scale(1.2);
+            }
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #ff0;
+            font-size: 16px;
+            text-shadow: 0 0 5px #ff0;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #0ff;
+            font-size: 24px;
+            text-shadow: 0 0 10px #0ff;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-family: 'Press Start 2P', cursive;
+            background-color: #f0f;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 10px #f0f;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background-color: #ff0;
+            box-shadow: 0 0 20px #ff0;
+        }
+
+        #grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 5% 5%;
+            pointer-events: none;
+        }
+
+        #controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 10px;
+            margin-top: 20px;
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid #0ff;
+            color: #0ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #up-btn {
+            grid-column: 2 / 3;
+        }
+
+        #left-btn {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+        }
+
+        #right-btn {
+            grid-column: 3 / 4;
+            grid-row: 2 / 3;
+        }
+
+        #down-btn {
+            grid-column: 2 / 3;
+            grid-row: 3 / 4;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-container">
+        <div id="game-board"></div>
+        <div id="grid-overlay"></div>
+        <div id="score">Score: 0</div>
+        <div id="game-over">
+            <div>Game Over!</div>
+            <div id="final-score"></div>
+            <button id="restart">Play Again</button>
+        </div>
+    </div>
+    <div id="controls">
+        <div id="up-btn" class="control-btn">↑</div>
+        <div id="left-btn" class="control-btn">←</div>
+        <div id="right-btn" class="control-btn">→</div>
+        <div id="down-btn" class="control-btn">↓</div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const gameBoard = document.getElementById('game-board');
+        const scoreDisplay = document.getElementById('score');
+        const gameOverDisplay = document.getElementById('game-over');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartButton = document.getElementById('restart');
+
+        const boardSize = 20;
+        let snake = [{ x: 10, y: 10 }];
+        let direction = 'right';
+        let food = {};
+        let score = 0;
+        let gameLoop;
+        let gameStartTime;
+
+        const endangeredSpecies = [
+            '🐼', '🐘', '🦏', '🐅', '🦒', '🦍', '🐋', '🐢', '🦈', '🦜'
+        ];
+
+        function createFood() {
+            food = {
+                x: Math.floor(Math.random() * boardSize),
+                y: Math.floor(Math.random() * boardSize),
+                species: endangeredSpecies[Math.floor(Math.random() * endangeredSpecies.length)]
+            };
+        }
+
+        function drawGame() {
+            gameBoard.innerHTML = '';
+            snake.forEach((segment, index) => {
+                const snakeElement = document.createElement('div');
+                snakeElement.style.gridRowStart = segment.y + 1;
+                snakeElement.style.gridColumnStart = segment.x + 1;
+                snakeElement.classList.add('snake-segment');
+                if (index === 0) {
+                    snakeElement.textContent = '👀';
+                    snakeElement.style.fontSize = '18px';
+                    snakeElement.style.display = 'flex';
+                    snakeElement.style.justifyContent = 'center';
+                    snakeElement.style.alignItems = 'center';
+                }
+                gameBoard.appendChild(snakeElement);
+            });
+
+            const foodElement = document.createElement('div');
+            foodElement.style.gridRowStart = food.y + 1;
+            foodElement.style.gridColumnStart = food.x + 1;
+            foodElement.classList.add('endangered-species');
+            foodElement.textContent = food.species;
+            foodElement.style.fontSize = '18px';
+            foodElement.style.display = 'flex';
+            foodElement.style.justifyContent = 'center';
+            foodElement.style.alignItems = 'center';
+            gameBoard.appendChild(foodElement);        
+        }
+
+        function moveSnake() {
+            const head = { ...snake[0] };
+            switch (direction) {
+                case 'up': head.y--; break;
+                case 'down': head.y++; break;
+                case 'left': head.x--; break;
+                case 'right': head.x++; break;
+            }
+
+            if (head.x < 0 || head.x >= boardSize || head.y < 0 || head.y >= boardSize) {
+                gameOver();
+                return;
+            }
+
+            if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+                gameOver();
+                return;
+            }
+
+            snake.unshift(head);
+
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                scoreDisplay.textContent = `Score: ${score}`;
+                createFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function gameOver() {
+            clearInterval(gameLoop);
+            gameOverDisplay.style.display = 'flex';
+            finalScoreDisplay.textContent = `Final Score: ${score}`;
+            
+            const gameEndTime = new Date();
+            const gameTime = (gameEndTime - gameStartTime) / 1000; // Time in seconds
+            
+            tg.sendData(JSON.stringify({
+                action: 'game_over',
+                score: score,
+                time: gameTime
+            }));
+        }
+
+        function startGame() {
+            snake = [{ x: 10, y: 10 }];
+            direction = 'right';
+            score = 0;
+            scoreDisplay.textContent = 'Score: 0';
+            createFood();
+            gameOverDisplay.style.display = 'none';
+            gameStartTime = new Date();
+
+            if (gameLoop) clearInterval(gameLoop);
+            gameLoop = setInterval(() => {
+                moveSnake();
+                drawGame();
+            }, 200);
+        }
+
+        document.addEventListener('keydown', (e) => {
+                switch (e.key) {
+                case 'ArrowUp': if (direction !== 'down') direction = 'up'; break;
+                case 'ArrowDown': if (direction !== 'up') direction = 'down'; break;
+                case 'ArrowLeft': if (direction !== 'right') direction = 'left'; break;
+                case 'ArrowRight': if (direction !== 'left') direction = 'right'; break;
+            }        
+        });
+
+        // Touch controls
+        document.getElementById('up-btn').addEventListener('click', () => { if (direction !== 'down') direction = 'up'; });
+        document.getElementById('down-btn').addEventListener('click', () => { if (direction !== 'up') direction = 'down'; });
+        document.getElementById('left-btn').addEventListener('click', () => { if (direction !== 'right') direction = 'left'; });
+        document.getElementById('right-btn').addEventListener('click', () => { if (direction !== 'left') direction = 'right'; });
+
+        restartButton.addEventListener('click', startGame);
+
+        startGame();
+    </script>
+</body>
+
+</html>
