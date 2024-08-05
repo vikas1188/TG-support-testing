@@ -181,6 +181,7 @@
     </div>
 
     <script>
+        console.log('Game initialized');
         let tg = window.Telegram.WebApp;
         tg.expand();
 
@@ -270,20 +271,25 @@
         }
 
         function gameOver() {
-            clearInterval(gameLoop);
-            gameOverDisplay.style.display = 'flex';
-            finalScoreDisplay.textContent = `Final Score: ${score}`;
-            
-            const gameEndTime = new Date();
-            const gameTime = (gameEndTime - gameStartTime) / 1000; // Time in seconds
-            
-            tg.sendData(JSON.stringify({
-                action: 'game_over',
-                game_name: 'NeonSnake',
-                score: score,
-                time: gameTime
-            }));
-        }
+                 console.log('Game over function called');
+                 clearInterval(gameLoop);
+                 gameOverDisplay.style.display = 'flex';
+                 finalScoreDisplay.textContent = `Final Score: ${score}`;
+                 
+                 const gameEndTime = new Date();
+                 const gameTime = (gameEndTime - gameStartTime) / 1000; // Time in seconds
+                 
+                 const data = JSON.stringify({
+                     action: 'game_over',
+                     game_name: 'Neon Snake: Endangered Species Edition',
+                     score: score,
+                     time: gameTime
+                 });
+                 
+                 console.log('Preparing to send data:', data);
+                 tg.sendData(data);
+                 console.log('Data sent to Telegram');
+             }
 
         function startGame() {
             snake = [{ x: 10, y: 10 }];
@@ -319,6 +325,7 @@
         restartButton.addEventListener('click', startGame);
 
         startGame();
+        console.log('Game script fully loaded');
     </script>
 </body>
 
