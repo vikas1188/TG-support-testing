@@ -286,9 +286,9 @@
                      time: gameTime
                  });
                  
-                 console.log('Preparing to send data:', data);
+                 tg.showAlert(`Sending data: ${data}`);
                  tg.sendData(data);
-                 console.log('Data sent to Telegram');
+                 tg.showAlert('Data sent to Telegram');
              }
 
         function startGame() {
