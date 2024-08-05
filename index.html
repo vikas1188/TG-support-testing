@@ -192,6 +192,9 @@
         }
         tg.expand();
 
+        // Initialize MainButton
+        tg.MainButton.setText('Send Score').hide();
+
         const gameBoard = document.getElementById('game-board');
         const scoreDisplay = document.getElementById('score');
         const gameOverDisplay = document.getElementById('game-over');
@@ -287,26 +290,25 @@
             
             const data = JSON.stringify({
                 action: 'game_over',
-                game_name: 'Neon Snake',
+                game_name: 'Neon Snake: Endangered Species Edition',
                 score: score,
                 time: gameTime
             });
             
-            tg.showAlert(`Preparing to send data: ${data}`);
-            
-            try {
-                tg.sendData(data);
-                tg.showAlert('Data sent to Telegram. If you don\'t see a confirmation, there might be an issue.');
-            } catch (error) {
-                tg.showAlert(`Error sending data: ${error.message}`);
-            }
-            
-            // Add a delay before closing
-            setTimeout(() => {
-                tg.showAlert('Game closing. If you didn\'t see a score confirmation, please report this issue.');
-                tg.close();
-            }, 3000);
+            // Store data to be sent
+            tg.WebApp.sendData = data;
+    
+            // Show MainButton
+            tg.MainButton.setText('Send Score').show();
+    
+            tg.showAlert('Game Over! Click "Send Score" to submit your score.');
         }
+
+        tg.MainButton.onClick(() => {
+            tg.sendData(tg.WebApp.sendData);
+            tg.MainButton.hide();
+            tg.showAlert('Score sent! You can close the game now.');
+        });
 
         function startGame() {
             snake = [{ x: 10, y: 10 }];
