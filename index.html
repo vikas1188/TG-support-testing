@@ -140,6 +140,18 @@
             cursor: pointer;
             user-select: none;
         }
+        
+        #send-score-btn {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #f0f;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 10px #f0f;
+        }
 
         #up-btn {
             grid-column: 2 / 3;
@@ -179,6 +191,7 @@
         <div id="right-btn" class="control-btn">→</div>
         <div id="down-btn" class="control-btn">↓</div>
     </div>
+    <button id="send-score-btn">Send Score</button>
 
     <script>
         console.log('Game initialized');
@@ -280,7 +293,7 @@
             }
         }
 
-        function gameOver() {
+         function gameOver() {
             clearInterval(gameLoop);
             gameOverDisplay.style.display = 'flex';
             finalScoreDisplay.textContent = `Final Score: ${score}`;
@@ -288,28 +301,24 @@
             const gameEndTime = new Date();
             const gameTime = (gameEndTime - gameStartTime) / 1000; // Time in seconds
             
+            document.getElementById('send-score-btn').style.display = 'block';
+            
+            tg.showAlert('Game Over! Click "Send Score" to submit your score.');
+        }
+
+        document.getElementById('send-score-btn').addEventListener('click', function() {
             const data = JSON.stringify({
                 action: 'game_over',
                 game_name: 'Neon Snake: Endangered Species Edition',
                 score: score,
-                time: gameTime
+                time: (new Date() - gameStartTime) / 1000
             });
             
-            // Store data to be sent
-            tg.WebApp.sendData = data;
-    
-            // Show MainButton
-            tg.MainButton.setText('Send Score').show();
-    
-            tg.showAlert('Game Over! Click "Send Score" to submit your score.');
-        }
-
-        tg.MainButton.onClick(() => {
-            tg.sendData(tg.WebApp.sendData);
-            tg.MainButton.hide();
+            tg.sendData(data);
             tg.showAlert('Score sent! You can close the game now.');
+            this.style.display = 'none';
         });
-
+        
         function startGame() {
             snake = [{ x: 10, y: 10 }];
             direction = 'right';
